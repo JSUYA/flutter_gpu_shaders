@@ -3,8 +3,7 @@ library flutter_gpu_shaders;
 import 'dart:convert' as convert;
 import 'dart:io';
 
-import 'package:native_assets_cli/code_assets_testing.dart';
-import 'package:native_assets_cli/native_assets_cli.dart';
+import 'package:hooks/hooks.dart';
 
 import 'package:flutter_gpu_shaders/environment.dart';
 
@@ -18,8 +17,9 @@ Future<void> _buildShaderBundleJson({
   /// 1. Parse the manifest file.
   ///
 
-  final manifest =
-      await File(inputManifestFilePath.toFilePath()).readAsString();
+  final manifest = await File(
+    inputManifestFilePath.toFilePath(),
+  ).readAsString();
   final decodedManifest = convert.json.decode(manifest);
   String reconstitutedManifest = convert.json.encode(decodedManifest);
 
@@ -38,11 +38,17 @@ Future<void> _buildShaderBundleJson({
     '--include=${shaderLibPath.toFilePath()}',
   ];
 
-  final impellerc = Process.runSync(impellercExec.toFilePath(), impellercArgs,
-      workingDirectory: packageRoot.toFilePath());
+  print(impellercArgs);
+
+  final impellerc = Process.runSync(
+    impellercExec.toFilePath(),
+    impellercArgs,
+    workingDirectory: packageRoot.toFilePath(),
+  );
   if (impellerc.exitCode != 0) {
     throw Exception(
-        'Failed to build shader bundle: ${impellerc.stderr}\n${impellerc.stdout}');
+      'Failed to build shader bundle: ${impellerc.stderr}\n${impellerc.stdout}',
+    );
   }
 }
 
@@ -82,18 +88,21 @@ Future<void> _buildShaderBundleJson({
 ///     }
 /// }
 /// ```
-Future<void> buildShaderBundleJson(
-    {required BuildInput buildInput,
-    required BuildOutputBuilder buildOutput,
-    required String manifestFileName}) async {
+Future<void> buildShaderBundleJson({
+  required BuildInput buildInput,
+  required BuildOutputBuilder buildOutput,
+  required String manifestFileName,
+}) async {
   String outputFileName = Uri(path: manifestFileName).pathSegments.last;
   if (!outputFileName.endsWith('.shaderbundle.json')) {
     throw Exception(
-        'Shader bundle manifest file names must end with ".shaderbundle.json".');
+      'Shader bundle manifest file names must end with ".shaderbundle.json".',
+    );
   }
   if (outputFileName.length <= '.shaderbundle.json'.length) {
     throw Exception(
-        'Invalid shader bundle manifest file name: $outputFileName');
+      'Invalid shader bundle manifest file name: $outputFileName',
+    );
   }
   if (outputFileName.endsWith('.json')) {
     outputFileName = outputFileName.substring(0, outputFileName.length - 5);
@@ -102,7 +111,8 @@ Future<void> buildShaderBundleJson(
   // TODO(bdero): Register DataAssets instead of outputting to the project directory once it's possible to do so.
   //final outDir = config.outputDirectory;
   final outDir = Directory.fromUri(
-      buildInput.packageRoot.resolve('build/shaderbundles/'));
+    buildInput.packageRoot.resolve('build/shaderbundles/'),
+  );
   await outDir.create(recursive: true);
   final packageRoot = buildInput.packageRoot;
 
@@ -110,7 +120,8 @@ Future<void> buildShaderBundleJson(
   final outFile = outDir.uri.resolve(outputFileName);
 
   await _buildShaderBundleJson(
-      packageRoot: packageRoot,
-      inputManifestFilePath: inFile,
-      outputBundleFilePath: outFile);
+    packageRoot: packageRoot,
+    inputManifestFilePath: inFile,
+    outputBundleFilePath: outFile,
+  );
 }
